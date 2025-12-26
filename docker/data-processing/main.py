@@ -1,36 +1,27 @@
 import os
-import pandas as pd
-from bs4 import BeautifulSoup
-from multiprocessing import Pool, cpu_count
+from worker import process_wet_file
 
-DATA_PATH = os.getenv("DATA_PATH", "./data")
-INPUT_CSV = os.path.join(DATA_PATH, "news_historic.csv")
-OUTPUT_CSV = os.path.join(DATA_PATH, "news_clean.csv")
+DATA_RAW = "/app/data/raw"
+DATA_PROCESSED = "/app/data/processed"
 
-df = pd.read_csv(INPUT_CSV)
+def main():
+    os.makedirs(DATA_PROCESSED, exist_ok=True)
 
-# Cambiado: ahora recibe directamente el nombre de archivo
-def process_file(file):
-    try:
-        with open(file, "r", encoding="utf-8") as f:
-            soup = BeautifulSoup(f, "html.parser")
-            title = soup.title.string if soup.title else ""
-            text = soup.get_text(separator=" ", strip=True)
-        return title, text
-    except:
-        return "", ""
+    wet_files = [
+        f for f in os.listdir(DATA_RAW)
+        if f.endswith(".wet.gz")
+    ]
 
-# Lista de archivos
-files = df["file"].tolist()
+    if not wet_files:
+        raise FileNotFoundError("No se encontraron archivos .wet.gz en data/raw")
 
-# Paralelismo
-with Pool(cpu_count()) as pool:
-    results = pool.map(process_file, files)
+    for wet_file in wet_files:
+        process_wet_file(
+            os.path.join(DATA_RAW, wet_file),
+            DATA_PROCESSED
+        )
 
-# Separar resultados
-titles, texts = zip(*results)
-df["title"] = titles
-df["text"] = texts
+    print("Procesamiento completado")
 
-df.to_csv(OUTPUT_CSV, index=False)
-print(f"Datos procesados guardados en {OUTPUT_CSV}")
+if __name__ == "__main__":
+    main()

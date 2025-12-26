@@ -1,5 +1,12 @@
 FROM python:3.9-slim
+
 WORKDIR /app
-RUN pip install pandas numpy
-COPY main.py .
+
+# Copiar dependencias
+COPY requirements.txt .
+RUN pip install --no-cache-dir --default-timeout=100 pandas numpy
+
+# Copiar TODO el código del servicio
+COPY . .
+
 CMD ["python", "main.py"]
