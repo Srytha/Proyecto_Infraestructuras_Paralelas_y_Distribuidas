@@ -34,15 +34,39 @@ def load_colcap(path="/data/raw/colcap.csv"):
 # --------------------------------------------------
 
 def load_news():
-    path = DATA_PROCESSED / "news.csv"
+    """Load news from all worker CSV files and combine them."""
     try:
-        logging.info(f"Cargando noticias desde {path}")
-        if not path.exists():
-            logging.warning("No se encontró archivo de noticias.")
+        logging.info(f"Buscando archivos de noticias en {DATA_PROCESSED}")
+        
+        # Find all worker CSV files
+        import glob
+        csv_files = glob.glob(str(DATA_PROCESSED / "news_worker_*.csv"))
+        
+        if not csv_files:
+            logging.warning("No se encontraron archivos de noticias de workers.")
             return pd.DataFrame(columns=["date", "text"])
-            
-        df = pd.read_csv(path, on_bad_lines='skip') # Saltar lineas corruptas
-
+        
+        logging.info(f"Encontrados {len(csv_files)} archivos de workers")
+        
+        # Load and combine all CSV files
+        dfs = []
+        for csv_file in csv_files:
+            try:
+                df = pd.read_csv(csv_file, on_bad_lines='skip')
+                dfs.append(df)
+                logging.info(f"Cargadas {len(df)} noticias de {csv_file}")
+            except Exception as e:
+                logging.warning(f"Error leyendo {csv_file}: {e}")
+                continue
+        
+        if not dfs:
+            logging.warning("No se pudieron cargar datos de ningún archivo.")
+            return pd.DataFrame(columns=["date", "text"])
+        
+        # Combine all dataframes
+        df = pd.concat(dfs, ignore_index=True)
+        logging.info(f"Total de noticias combinadas: {len(df)}")
+        
         df["date"] = pd.to_datetime(df["date"]).dt.tz_localize(None)
         return df
     except Exception as e:
@@ -105,7 +129,7 @@ def compute_correlation(colcap_df, news_df):
         row = merged.iloc[0].copy()
         row["date"] = row["date"] + pd.Timedelta(days=1)
         # Variar ligeramente valores para evitar covarianza cero
-        # Variar ligeramente valores para evitar covarianza cero
+        
         if "close" in row and "news_count" in row:
              row["close"] = row["close"] * 1.01
              row["news_count"] += 100 # Variar significativamente

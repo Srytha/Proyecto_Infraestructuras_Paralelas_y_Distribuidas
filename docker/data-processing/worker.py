@@ -4,7 +4,9 @@ import csv
 import os
 
 def process_wet_file(wet_path, output_dir):
-    output_file = os.path.join(output_dir, "news.csv")
+    # Create worker-specific CSV file to avoid race conditions
+    worker_id = os.getpid()
+    output_file = os.path.join(output_dir, f"news_worker_{worker_id}.csv")
     write_header = not os.path.exists(output_file)
 
     with gzip.open(wet_path, "rb") as stream, \
