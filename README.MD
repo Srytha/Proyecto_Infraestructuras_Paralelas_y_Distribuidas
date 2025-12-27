@@ -61,7 +61,6 @@ docker run --rm -v $(pwd)/data:/data economic-data:latest
 ```
 *Esto descargará el histórico de precios a `data/raw/colcap.csv`.*
 
-> **Opción Manual**: Si Yahoo Finance falla o prefieres usar tus propios datos:
 > 1. Consigue tu CSV histórico.
 > 2. Renómbralo a `manual_colcap.csv`.
 > 3. Guárdalo en `data/raw/` antes de ejecutar el paso B.
