@@ -1,32 +1,10 @@
 import pandas as pd
-import yfinance as yf
 from datetime import datetime, timedelta
 import os
 import time
 
 # Configurable paths
 OUTPUT_FILE = "/data/raw/colcap.csv"
-
-def fetch_colcap_yfinance(start_date, end_date):
-    print(f"Intentando descargar COLCAP desde Yahoo Finance...")
-    try:
-        ticker = yf.Ticker("^COLCAP")
-        # Extendemos el rango un poco para asegurar datos
-        df = ticker.history(period="2y") # Usar periodo predefinido para asegurar
-        
-        if not df.empty:
-            df = df.reset_index()
-            # Asegurar timezone naive
-            df['Date'] = df['Date'].dt.tz_localize(None)
-            df.columns = [c.lower() for c in df.columns]
-            print(f"Descargados {len(df)} registros desde Yahoo Finance")
-            return df[['date', 'close']]
-        else:
-            print("No se encontraron datos en Yahoo Finance")
-            return None
-    except Exception as e:
-        print(f"Error con Yahoo Finance: {e}")
-        return None
 
 def fetch_colcap_synthetic(start_date, end_date):
     print("Generando datos sintéticos para pruebas (fallback)...")
@@ -60,8 +38,8 @@ def main():
             # Pero probemos configurando explícitamente formato US
             df = pd.read_csv(manual_path, sep=';', thousands=',', decimal='.')
             
-            print(f"DEBUG: Leídas {len(df)} filas.")
-            print(f"DEBUG: Columnas: {df.columns.tolist()}")
+            print(f"Info: Procesando archivo manual. Filas leidas: {len(df)}")
+            print(f"Info: Columnas detectadas en CSV: {df.columns.tolist()}")
             
             # Limpiar nombres de columnas
             df.columns = [c.strip() for c in df.columns]
@@ -81,8 +59,8 @@ def main():
                  print("Archivo manual valido (columnas mapeadas correctamente)")
                  df = df[['date', 'close']]
                  
-                 # Debug antes de conversión
-                 print(f"DEBUG Pre-proceso:\n{df.head(2)}")
+                 # Vista previa de datos manuales
+                 print(f"Info: Primeras filas del archivo manual:\n{df.head(2)}")
                  
                  df['date'] = pd.to_datetime(df['date'])
                  # Convertir close a numérico (asegurar compatibilidad)
@@ -91,7 +69,7 @@ def main():
                  count_before = len(df)
                  df = df.dropna()
                  count_after = len(df)
-                 print(f"DEBUG: Filas válidas tras limpieza: {count_after} (de {count_before})")
+                 print(f"Info: Filas válidas importadas desde CSV: {count_after} (de {count_before})")
             else:
                  print(f"Columnas encontradas: {df.columns.tolist()}")
                  print("No se encontraron columnas 'Fecha'/'Valor hoy' ni sus variantes.")
@@ -102,11 +80,7 @@ def main():
     else:
         df = None
 
-    # 2. Si no hay manual, intentar Yahoo Finance
-    if df is None or df.empty:
-        df = fetch_colcap_yfinance(start_date, end_date)
-    
-    # 3. Fallback sintético
+    # 2. Si no hay manual, Fallback sintético
     if df is None or df.empty:
         df = fetch_colcap_synthetic(start_date, end_date)
         
