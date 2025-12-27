@@ -1,122 +1,88 @@
-Estructura 
+# Distributed News & Economic Data Analysis System
 
-# PROYECTO- Infraestructuras Paralelas y Distribuidas
+Este proyecto es una implementación de un sistema distribuido escalable diseñado para procesar grandes volúmenes de datos web (Common Crawl) y correlacionar tendencias noticiosas con indicadores económicos (COLCAP).
 
-## Tutorial: Preparación de Datos (data/raw)
+## Características Principales
 
-Este tutorial te guiará para obtener y preparar los datos necesarios desde Common Crawl.
+*   **Ingesta de Datos Reales**: Descarga automatizada de archivos WET (texto plano) desde el dataset de diciembre 2025 de Common Crawl.
+*   **Procesamiento Distribuido**: Arquitectura scalable con múltiples workers que procesan archivos en paralelo usando un mecanismo de bloqueo (move-to-process) seguro.
+*   **Análisis Económico**: Obtención de datos históricos del índice COLCAP usando Yahoo Finance.
+*   **Correlación**: Análisis estadístico para cruzar volumen de noticias diarias con el cierre del mercado.
+*   **Infraestructura como Código**: Dockerfiles optimizados para cada microservicio y orquestación manual mediante volúmenes compartidos.
 
-### Paso 1: Crear el directorio de datos
+## Arquitectura
+
+El sistema consta de 4 microservicios interconectados mediante un volumen compartido (`/data`):
+
+1.  **Data Ingestion**: Descarga archivos `.wet.gz` de Common Crawl a `/data/raw`.
+2.  **Data Processing**: Scaling workers (replicas) que toman archivos, los procesan y extraen noticias relevantes a `/data/processed`.
+3.  **Economic Data**: Descarga y normaliza el historial del COLCAP a `/data/raw/colcap.csv`.
+4.  **Correlation Service**: Lee los datos procesados y económicos, y genera el análisis final en `/data/results`.
+
+## Requisitos Previos
+
+*   Docker
+*   (Opcional) Cluster de Kubernetes (Minikube, EKS, GKE) para despliegue en producción.
+
+## Ejecución Manual con Docker
+
+A continuación los pasos para construir y ejecutar cada servicio individualmente, simulando el entorno distribuido.
+
+### 1. Preparación
+
+Crear directorios de datos y limpiar entorno:
+```bash
+sudo rm -rf data/processed/* data/raw/* data/processing/*
+mkdir -p data/raw data/processed data/processing data/results
+```
+
+### 2. Construcción de Imágenes
 
 ```bash
-mkdir -p data/raw
+docker build -t data-ingestion:latest docker/data-ingestion
+docker build -t data-processing:latest docker/data-processing
+docker build -t economic-data:latest docker/economic-data
+docker build -t correlation-service:latest docker/correlation-service
 ```
 
-### Paso 2: Descargar el índice de archivos WET
+### 3. Ejecución de Servicios
+
+Ejecutar en orden secuencial (o paralelo si se abren varias terminales), montando siempre el volumen local `./data` a `/data` en el contenedor.
+
+**Paso A: Ingesta de Noticias (Common Crawl)**
+```bash
+docker run --rm -v $(pwd)/data:/data data-ingestion:latest
+```
+*Esto descargará los archivos WET a `data/raw`.*
+
+**Paso B: Datos Económicos (COLCAP)**
+```bash
+docker run --rm -v $(pwd)/data:/data economic-data:latest
+```
+*Esto descargará el histórico de precios a `data/raw/colcap.csv`.*
+
+**Paso C: Procesamiento (Ejecutar múltiples Workers)**
+Para simular concurrencia, abre varias terminales y en cada una ejecuta:
+```bash
+docker run --rm -v $(pwd)/data:/data data-processing:latest
+```
+*Los workers tomarán archivos de `raw`, los moverán a `processing` y guardarán resultados en `processed`.*
+
+**Paso D: Correlación Final**
+Una vez terminados los pasos anteriores:
+```bash
+docker run --rm -v $(pwd)/data:/data correlation-service:latest
+```
+
+### 4. Verificar Resultados
 
 ```bash
-curl -L https://data.commoncrawl.org/crawl-data/CC-MAIN-2024-10/wet.paths.gz -o wet.paths.gz
+cat data/results/correlation.csv
 ```
 
-### Paso 3: Verificar que el archivo se descargó correctamente
+## Estructura del Proyecto
 
-```bash
-file wet.paths.gz
-```
-
-Deberías ver algo como: `wet.paths.gz: gzip compressed data`
-
-### Paso 4: Extraer y visualizar las primeras rutas
-
-Una vez que `wet.paths.gz` sea válido:
-
-```bash
-gunzip -c wet.paths.gz | head -n 3
-```
-
-### Paso 5: Descargar un archivo WET específico
-
-Copia una línea real del paso anterior, por ejemplo:
-
-```
-crawl-data/CC-MAIN-2024-10/segments/.../wet/CC-MAIN-20240410123456-00000.warc.wet.gz
-```
-
-Y descárgala así:
-
-```bash
-curl -L https://data.commoncrawl.org/<RUTA_COPIADA> \
-  -o data/raw/commoncrawl_news.warc.wet.gz
-```
-
-**Ejemplo completo:**
-```bash
-curl -L https://data.commoncrawl.org/crawl-data/CC-MAIN-2024-10/segments/1712296817038.34/wet/CC-MAIN-20240410123456-00000.warc.wet.gz \
-  -o data/raw/commoncrawl_news.warc.wet.gz
-```
-
-### PASO 6: Verificar que el archivo es válido (⚠️ OBLIGATORIO)
-
-Ejecuta:
-
-```bash
-gzip -t data/raw/commoncrawl_news.warc.wet.gz
-```
-
-✔ **Si NO muestra nada**, el archivo es correcto
-
-❌ **Si muestra un error**, el archivo está corrupto y debes descargarlo nuevamente
-
-### PASO 7: Confirmar que contiene texto real
-
-```bash
-gzip -dc data/raw/commoncrawl_news.warc.wet.gz | head -n 40
-```
-
-Debes ver algo como:
-
-```
-WARC/1.0
-WARC-Type: warc
-WARC-Date: 2024-02-20T21:11:02Z
-
-This website uses cookies to ensure you get the best experience...
-```
-
-### PASO 8: Procesar los datos
-
-Una vez que tengas el archivo WET, procesa los datos con el servicio de procesamiento:
-
-```bash
-# Construir la imagen Docker
-docker build -t data-processing docker/data-processing
-
-# Ejecutar el procesamiento
-docker run --rm -v ${PWD}/data:/app/data data-processing
-```
-
-### PASO 9: Verificar el resultado
-
-```bash
-head data/processed/news.csv
-```
-
-Ahora DEBE verse algo así:
-
-```csv
-date,text
-2024-02-20T21:11:02Z,this website uses cookies to ensure you get the best experience...
-2024-02-20T21:11:05Z,breaking news from the financial markets today...
-```
-
-### PASO 10: Validar volumen (opcional pero recomendado)
-
-```bash
-wc -l data/processed/news.csv
-```
-
-✔ **Más de 10 líneas** → suficiente  
-✔ **Más de 100** → excelente
-
----
-
+*   `docker/`: Código fuente y Dockerfiles de los 4 microservicios.
+*   `kubernetes/`: Manifiestos YAML para despliegue (Deployments, PVC).
+*   `docker-compose.yaml`: Orquestación local.
+*   `data/`: Directorio de volumen compartido (se crea al ejecutar).

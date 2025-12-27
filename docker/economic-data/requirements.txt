@@ -1,0 +1,5 @@
+pandas==2.1.4
+yfinance==0.2.33
+requests==2.31.0
+beautifulsoup4==4.12.2
+numpy
