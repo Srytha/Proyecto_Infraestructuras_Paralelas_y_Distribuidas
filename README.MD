@@ -12,7 +12,7 @@ Este proyecto es una implementación de un sistema distribuido escalable diseña
 *   **Optimización de Memoria**: El servicio de correlación implementa una carga selectiva de columnas (ignorando textos largos) para procesar cientos de miles de noticias sin saturar la RAM.
 *   **Descargas Paralelas**: Uso de `ThreadPoolExecutor` para descargar hasta 4 archivos simultáneamente.
 *   **Procesamiento Distribuido**: Arquitectura escalable con múltiples workers que procesan archivos en paralelo usando un mecanismo de bloqueo (move-to-process) seguro.
-*   **Análisis Económico**: Obtención de datos históricos del índice COLCAP usando Yahoo Finance.
+*   **Análisis Económico**: Obtención de datos históricos del índice COLCAP.
 *   **Correlación Temporal**: Análisis estadístico cruzando volumen de noticias diarias con el cierre del mercado, con datos de múltiples períodos.
 *   **Infraestructura como Código**: Dockerfiles optimizados para cada microservicio y orquestación con Kubernetes.
 
