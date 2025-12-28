@@ -33,7 +33,22 @@ def main():
     DATA_PROCESSING.mkdir(parents=True, exist_ok=True)
     DATA_PROCESSED.mkdir(parents=True, exist_ok=True)
     
-    logging.info("Worker iniciado. Esperando archivos...")
+    # Esperar a que la ingesta termine (buscar archivo de señal)
+    flag_file = DATA_RAW / ".ingestion_complete"
+    logging.info("Worker iniciado. Esperando señal de ingesta completada...")
+    
+    wait_count = 0
+    while not flag_file.exists() and not shutdown_requested:
+        wait_count += 1
+        if wait_count % 6 == 0:  # Log cada 30 segundos
+            logging.info("Aún esperando señal de ingesta...")
+        time.sleep(5)
+    
+    if shutdown_requested:
+        logging.info("Worker terminado antes de iniciar procesamiento")
+        return
+    
+    logging.info("Señal de ingesta detectada. Iniciando procesamiento...")
 
     while not shutdown_requested:
         try:

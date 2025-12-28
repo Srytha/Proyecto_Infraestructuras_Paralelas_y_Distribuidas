@@ -4,11 +4,18 @@ Este proyecto es una implementación de un sistema distribuido escalable diseña
 
 ## Características Principales
 
-*   **Ingesta de Datos Reales**: Descarga automatizada de archivos WET (texto plano) desde el dataset de diciembre 2025 de Common Crawl.
-*   **Procesamiento Distribuido**: Arquitectura scalable con múltiples workers que procesan archivos en paralelo usando un mecanismo de bloqueo (move-to-process) seguro.
+*   **Ingesta Multi-Crawl**: Descarga automatizada de archivos WET desde **4 crawls diferentes de 2024** para análisis temporal diverso:
+    *   `CC-MAIN-2024-10` (Feb-Mar 2024)
+    *   `CC-MAIN-2024-22` (May-Jun 2024)
+    *   `CC-MAIN-2024-33` (Aug 2024)
+    *   `CC-MAIN-2024-46` (Nov 2024)
+*   **Optimización de Memoria**: El servicio de correlación implementa una carga selectiva de columnas (ignorando textos largos) para procesar cientos de miles de noticias sin saturar la RAM.
+*   **Descargas Paralelas**: Uso de `ThreadPoolExecutor` para descargar hasta 4 archivos simultáneamente.
+*   **Procesamiento Distribuido**: Arquitectura escalable con múltiples workers que procesan archivos en paralelo usando un mecanismo de bloqueo (move-to-process) seguro.
 *   **Análisis Económico**: Obtención de datos históricos del índice COLCAP usando Yahoo Finance.
-*   **Correlación**: Análisis estadístico para cruzar volumen de noticias diarias con el cierre del mercado.
-*   **Infraestructura como Código**: Dockerfiles optimizados para cada microservicio y orquestación manual mediante volúmenes compartidos.
+*   **Correlación Temporal**: Análisis estadístico cruzando volumen de noticias diarias con el cierre del mercado, con datos de múltiples períodos.
+*   **Infraestructura como Código**: Dockerfiles optimizados para cada microservicio y orquestación con Kubernetes.
+
 
 ## Arquitectura
 
@@ -30,9 +37,9 @@ A continuación los pasos para construir y ejecutar cada servicio individualment
 
 ### 1. Preparación
 
-Crear directorios de datos y limpiar entorno:
+Crear directorios de datos y limpiar resultados anteriores (borrando también descargas y `colcap.csv` generado, pero manteniendo CSVs manuales):
 ```bash
-sudo rm -rf data/processed/* data/raw/* data/processing/*
+sudo rm -rf data/processed/* data/processing/* data/results/* data/raw/colcap.csv data/raw/*.gz
 mkdir -p data/raw data/processed data/processing data/results
 ```
 
@@ -56,16 +63,25 @@ docker run --rm -v $(pwd)/data:/data data-ingestion:latest
 *Esto descargará los archivos WET a `data/raw`.*
 
 **Paso B: Datos Económicos (COLCAP)**
+
+El sistema requiere archivos históricos del índice COLCAP para funcionar.
+1.  **Coloca tus archivos CSV** en la carpeta `data/raw/` **ANTES** de ejecutar el contenedor.
+2.  **Formato soportado**:
+    *   Nombre de archivo sugerido: `YYYY-MM-DD--YYYY-MM-DD.csv` (e.g., `2024-02-01--2024-05-01.csv`).
+    *   Separador: `;` (Punto y coma) o `,` (Coma).
+    *   Columnas requeridas: `Fecha` y `Valor hoy` (o `Date` y `Close`).
+    *   Ejemplo de contenido:
+        ```csv
+        Fecha;Valor hoy;Apertura;...
+        01/02/2024;1.285,45;1.280,10;...
+        ```
+3.  **Ejecutar el servicio de consolidación**:
+    Este servicio buscará *todos* los CSVs en `data/raw`, los unirá y generará un archivo maestro `colcap.csv` estandarizado.
+
 ```bash
 docker run --rm -v $(pwd)/data:/data economic-data:latest
 ```
-*Esto descargará el histórico de precios a `data/raw/colcap.csv`.*
-
-> **Opción Manual**: Si Yahoo Finance falla o prefieres usar tus propios datos:
-> 1. Consigue tu CSV histórico.
-> 2. Renómbralo a `manual_colcap.csv`.
-> 3. Guárdalo en `data/raw/` antes de ejecutar el paso B.
-> 4. El servicio lo detectará automáticamente y usará esos datos.
+*Esto generará `data/raw/colcap.csv` listo para el análisis.*
 
 **Paso C: Procesamiento (Ejecutar múltiples Workers)**
 Para simular concurrencia, abre varias terminales y en cada una ejecuta:

@@ -44,7 +44,7 @@ def load_news():
         
         if not csv_files:
             logging.warning("No se encontraron archivos de noticias de workers.")
-            return pd.DataFrame(columns=["date", "text"])
+            return pd.DataFrame(columns=["date", "crawl", "text"])
         
         logging.info(f"Encontrados {len(csv_files)} archivos de workers")
         
@@ -52,26 +52,40 @@ def load_news():
         dfs = []
         for csv_file in csv_files:
             try:
-                df = pd.read_csv(csv_file, on_bad_lines='skip')
+                # Optimization: Only load necessary columns to avoid OOM
+                df = pd.read_csv(
+                    csv_file, 
+                    usecols=lambda c: c in ["date", "crawl"],
+                    on_bad_lines='skip'
+                )
                 dfs.append(df)
-                logging.info(f"Cargadas {len(df)} noticias de {csv_file}")
+                logging.info(f"Cargadas {len(df)} noticias de {csv_file} (Optimizada memoria)")
             except Exception as e:
                 logging.warning(f"Error leyendo {csv_file}: {e}")
                 continue
         
         if not dfs:
             logging.warning("No se pudieron cargar datos de ningún archivo.")
-            return pd.DataFrame(columns=["date", "text"])
+            return pd.DataFrame(columns=["date", "crawl", "text"])
         
         # Combine all dataframes
         df = pd.concat(dfs, ignore_index=True)
         logging.info(f"Total de noticias combinadas: {len(df)}")
         
+        # Convertir fecha
         df["date"] = pd.to_datetime(df["date"]).dt.tz_localize(None)
+        
+        # Mostrar distribución por crawl si existe la columna
+        if "crawl" in df.columns:
+            crawl_counts = df["crawl"].value_counts()
+            logging.info("Distribución de noticias por crawl:")
+            for crawl, count in crawl_counts.items():
+                logging.info(f"  {crawl}: {count} noticias")
+        
         return df
     except Exception as e:
         logging.error(f"Error cargando noticias: {e}")
-        return pd.DataFrame(columns=["date", "text"])
+        return pd.DataFrame(columns=["date", "crawl", "text"])
 
 
 # --------------------------------------------------
