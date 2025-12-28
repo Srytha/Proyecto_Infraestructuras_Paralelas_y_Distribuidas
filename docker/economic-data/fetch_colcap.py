@@ -1,5 +1,5 @@
 import pandas as pd
-from datetime import datetime, timedelta
+
 import os
 import glob
 import re
@@ -8,21 +8,6 @@ import re
 OUTPUT_FILE = "/data/raw/colcap.csv"
 MANUAL_CSV_DIR = "/data/raw"
 
-def fetch_colcap_synthetic(start_date, end_date):
-    """Genera datos sintéticos como fallback."""
-    print("Generando datos sintéticos para pruebas (fallback)...")
-    date_range = pd.date_range(start=start_date, end=end_date, freq='D')
-    import numpy as np
-    
-    base_value = 1400
-    changes = np.random.randn(len(date_range)) * 10
-    values = base_value + np.cumsum(changes)
-    
-    df = pd.DataFrame({
-        'date': date_range,
-        'close': values
-    })
-    return df
 
 
 def load_single_csv(filepath):
@@ -80,9 +65,6 @@ def find_colcap_csvs():
 def main():
     os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
     
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=730)
-    
     # 1. Buscar archivos CSV de COLCAP
     csv_files = find_colcap_csvs()
     
@@ -117,9 +99,6 @@ def main():
         print("No se encontraron archivos CSV de COLCAP.")
         df = None
     
-    # 2. Fallback sintético si no hay datos
-    if df is None or df.empty:
-        df = fetch_colcap_synthetic(start_date, end_date)
     
     # 3. Guardar resultado
     if df is not None and not df.empty:
