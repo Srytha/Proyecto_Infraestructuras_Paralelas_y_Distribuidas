@@ -5,9 +5,9 @@ Este proyecto es una implementación de un sistema distribuido escalable diseña
 ## Características Principales
 
 *   **Ingesta Inteligente via CC Index API**: Búsqueda dirigida en el índice de Common Crawl para obtener solo contenido de **noticias colombianas** relevantes:
-    *   Dominios: `eltiempo.com`, `elespectador.com`, `portafolio.co`, `larepublica.co`, `dinero.com`, `semana.com`, `elcolombiano.com`
-    *   Secciones: `/economia/`, `/negocios/`, `/finanzas/`, `/mercados/`, `/politica/`
-    *   Crawls: 4 períodos de 2024 (Feb-Mar, May-Jun, Aug, Nov)
+    *   Dominios: `eltiempo.com`, `elespectador.com`, `portafolio.co`, `larepublica.co`, `dinero.com`, `semana.com`, `valoraanalitik.com`, `dataifx.com`, `forbes.co`, `bloomberglinea.com` y regionales importantes (18+ fuentes).
+    *   Secciones: `/economia/`, `/negocios/`, `/finanzas/`, `/mercados/`, `/politica/`, `/inversion/`, `/energia/`, etc.
+    *   Crawls: 10 períodos de 2024 (Feb a Dic) para máxima cobertura temporal.
 *   **Filtrado por Relevancia Económica**: Keywords como `economía`, `bolsa`, `COLCAP`, `dólar`, `inversión`, etc.
 *   **Descargas Eficientes**: Range Requests para descargar solo segmentos WARC relevantes (no archivos completos).
 *   **Procesamiento Distribuido**: Workers escalables con bloqueo atómico y procesamiento paralelo.
