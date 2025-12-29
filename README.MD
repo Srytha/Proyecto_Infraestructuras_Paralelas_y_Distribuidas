@@ -4,17 +4,15 @@ Este proyecto es una implementación de un sistema distribuido escalable diseña
 
 ## Características Principales
 
-*   **Ingesta Multi-Crawl**: Descarga automatizada de archivos WET desde **4 crawls diferentes de 2024** para análisis temporal diverso:
-    *   `CC-MAIN-2024-10` (Feb-Mar 2024)
-    *   `CC-MAIN-2024-22` (May-Jun 2024)
-    *   `CC-MAIN-2024-33` (Aug 2024)
-    *   `CC-MAIN-2024-46` (Nov 2024)
-*   **Optimización de Memoria**: El servicio de correlación implementa una carga selectiva de columnas (ignorando textos largos) para procesar cientos de miles de noticias sin saturar la RAM.
-*   **Descargas Paralelas**: Uso de `ThreadPoolExecutor` para descargar hasta 4 archivos simultáneamente.
-*   **Procesamiento Distribuido**: Arquitectura escalable con múltiples workers que procesan archivos en paralelo usando un mecanismo de bloqueo (move-to-process) seguro.
-*   **Análisis Económico**: Obtención de datos históricos del índice COLCAP.
-*   **Correlación Temporal**: Análisis estadístico cruzando volumen de noticias diarias con el cierre del mercado, con datos de múltiples períodos.
-*   **Infraestructura como Código**: Dockerfiles optimizados para cada microservicio y orquestación con Kubernetes.
+*   **Ingesta Inteligente via CC Index API**: Búsqueda dirigida en el índice de Common Crawl para obtener solo contenido de **noticias colombianas** relevantes:
+    *   Dominios: `eltiempo.com`, `elespectador.com`, `portafolio.co`, `larepublica.co`, `dinero.com`, `semana.com`, `elcolombiano.com`
+    *   Secciones: `/economia/`, `/negocios/`, `/finanzas/`, `/mercados/`, `/politica/`
+    *   Crawls: 4 períodos de 2024 (Feb-Mar, May-Jun, Aug, Nov)
+*   **Filtrado por Relevancia Económica**: Keywords como `economía`, `bolsa`, `COLCAP`, `dólar`, `inversión`, etc.
+*   **Descargas Eficientes**: Range Requests para descargar solo segmentos WARC relevantes (no archivos completos).
+*   **Procesamiento Distribuido**: Workers escalables con bloqueo atómico y procesamiento paralelo.
+*   **Correlación Temporal**: Análisis estadístico cruzando noticias diarias con cierre del COLCAP.
+*   **Infraestructura como Código**: Docker + Kubernetes.
 
 
 ## Arquitectura
@@ -56,11 +54,11 @@ docker build -t correlation-service:latest docker/correlation-service
 
 Ejecutar en orden secuencial (o paralelo si se abren varias terminales), montando siempre el volumen local `./data` a `/data` en el contenedor.
 
-**Paso A: Ingesta de Noticias (Common Crawl)**
+**Paso A: Ingesta de Noticias (Common Crawl Index API)**
 ```bash
 docker run --rm -v $(pwd)/data:/data data-ingestion:latest
 ```
-*Esto descargará los archivos WET a `data/raw`.*
+*Esto consultará el índice de Common Crawl buscando noticias de dominios colombianos en secciones económicas, y descargará solo los segmentos WARC relevantes a `data/raw`.*
 
 **Paso B: Datos Económicos (COLCAP)**
 

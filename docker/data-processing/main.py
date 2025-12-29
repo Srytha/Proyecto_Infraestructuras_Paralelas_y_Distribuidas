@@ -49,19 +49,59 @@ def main():
         return
     
     logging.info("Señal de ingesta detectada. Iniciando procesamiento...")
+    
+    # Counter for empty wait cycles (to detect when processing is complete)
+    empty_wait_cycles = 0
+    MAX_EMPTY_CYCLES = 6  # Exit after 30 seconds of no files (6 * 5 sec)
+    files_processed_total = 0
+    
+    # Statistics collection
+    from collections import defaultdict
+    from datetime import datetime
+    start_time = datetime.now()
+    stats_by_crawl = defaultdict(lambda: {"files": 0, "records_processed": 0, "records_saved": 0})
+    total_errors = 0
 
     while not shutdown_requested:
         try:
-            # 1. Listar archivos disponibles en RAW
-            files = [f for f in os.listdir(DATA_RAW) if f.endswith(".wet.gz")]
+            # 1. Listar archivos disponibles en RAW (soporta WET y WARC)
+            files = [f for f in os.listdir(DATA_RAW) 
+                     if f.endswith(".wet.gz") or f.endswith(".warc.gz")]
             
             if not files:
+                empty_wait_cycles += 1
+                if empty_wait_cycles >= MAX_EMPTY_CYCLES:
+                    # Print summary
+                    elapsed = (datetime.now() - start_time).total_seconds()
+                    logging.info("=" * 60)
+                    logging.info("RESUMEN DE PROCESAMIENTO")
+                    logging.info("=" * 60)
+                    logging.info(f"Tiempo total: {elapsed:.1f} segundos")
+                    logging.info(f"Archivos procesados: {files_processed_total}")
+                    logging.info(f"Errores: {total_errors}")
+                    logging.info("-" * 40)
+                    logging.info("Distribución por crawl:")
+                    total_saved = 0
+                    total_processed = 0
+                    for crawl_id, data in sorted(stats_by_crawl.items()):
+                        logging.info(f"  {crawl_id}:")
+                        logging.info(f"    Archivos: {data['files']}")
+                        logging.info(f"    Registros: {data['records_saved']}/{data['records_processed']} guardados")
+                        total_saved += data['records_saved']
+                        total_processed += data['records_processed']
+                    logging.info("-" * 40)
+                    logging.info(f"TOTAL: {total_saved} noticias guardadas de {total_processed} registros")
+                    logging.info("=" * 60)
+                    break
                 # Check for shutdown before sleeping
                 if shutdown_requested:
                     break
-                # Esperar un poco antes de volver a verificar para no saturar CPU
+                # Esperar un poco antes de volver a verificar
                 time.sleep(5)
                 continue
+            
+            # Reset counter when files are found
+            empty_wait_cycles = 0
 
             # 2. Intentar "reservar" un archivo moviéndolo
             # Debido a la concurrencia, varios workers pueden ver el mismo archivo,
@@ -88,14 +128,26 @@ def main():
 
             # 3. Procesar el archivo reservado
             try:
-                process_wet_file(str(target_file), str(DATA_PROCESSED))
-                logging.info(f"Procesado exitosamente: {target_file.name}")
+                result = process_wet_file(str(target_file), str(DATA_PROCESSED))
+                
+                # Acumular estadísticas
+                if isinstance(result, dict):
+                    crawl = result.get("crawl", "unknown")
+                    stats_by_crawl[crawl]["files"] += 1
+                    stats_by_crawl[crawl]["records_processed"] += result.get("processed", 0)
+                    stats_by_crawl[crawl]["records_saved"] += result.get("saved", 0)
+                    if result.get("error"):
+                        total_errors += 1
+                
+                logging.info(f"Procesado: {target_file.name}")
+                files_processed_total += 1
                 
                 # 4. Eliminar el archivo temporal procesado (para no ocupar espacio)
                 os.remove(target_file)
                 
             except Exception as e:
                 logging.error(f"Error procesando {target_file.name}: {e}")
+                total_errors += 1
                 # Opcional: Mover a una carpeta 'failed' o devolver a 'raw'
                 # Por ahora, simplemente lo renombramos con .err para análisis
                 error_path = target_file.with_suffix(target_file.suffix + ".err")
