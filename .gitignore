@@ -5,3 +5,4 @@ data/raw/
 data/processed/
 data/results/
 wet.paths.gz
+*.pem
