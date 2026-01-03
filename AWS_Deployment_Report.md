@@ -3,107 +3,15 @@
 **Project**: Distributed News & Economic Data Analysis System  
 **Deployment Date**: January 2, 2026  
 **Platform**: AWS EKS (Kubernetes)  
-**Status**: ✅ Successfully Deployed and Operational
+**Status**: Successfully Deployed and Operational
 
 ---
 
-## 🎯 Project Objective
+## Project Objective
 
 Deploy a distributed data pipeline system to AWS using Kubernetes for processing Common Crawl news data and correlating with Colombian economic indicators (COLCAP), with enterprise-grade orchestration and scalability.
 
----
-
-## ✅ Deployment Approach Selected
-
-**Architecture**: AWS EKS (Elastic Kubernetes Service)
-- **Rationale**: Cloud-native orchestration with auto-scaling, self-healing, and declarative configuration
-- **Cluster Configuration**: EKS managed control plane with EC2 worker nodes
-- **Worker Nodes**: t3.medium instances (2 vCPU, 4GB RAM each)
-- **Estimated Cost**: $73/month (EKS) + $30-60/month (worker nodes) = ~$103-133/month
-
----
-
-## 📋 Steps Completed
-
-### ✅ Step 1: AWS EKS Cluster Setup
-- EKS cluster created with managed control plane
-- Worker node group configured (2-3 t3.medium instances)
-- IAM roles and policies configured for cluster and nodes
-- kubectl configured to connect to EKS cluster
-- VPC and networking configured with proper security groups
-
-### ✅ Step 2: Persistent Storage Configuration
-- Created PersistentVolumeClaim (PVC) for shared data storage
-- Configured 20GB volume for pipeline data sharing
-- Set ReadWriteOnce access mode for data consistency
-- Mounted shared volume across all pods
-
-### ✅ Step 3: Container Images Preparation
-- Built 4 Docker images from microservices:
-  1. `economic-data:latest` - COLCAP data consolidation
-  2. `data-ingestion:latest` - Common Crawl news downloading
-  3. `data-processing:latest` - Parallel news processing workers
-  4. `correlation-service:latest` - Statistical analysis
-- Pushed images to container registry (or loaded locally for minikube/k3s)
-- Configured ImagePullPolicy for optimal caching
-
-### ✅ Step 4: Kubernetes Resources Deployment
-- Deployed data ingestion pod (1 replica)
-- Deployed processing workers (4 replicas for parallel processing)
-- Deployed correlation service (1 replica)
-- Created Service endpoint for correlation-service
-- All pods configured with shared PVC mount
-
-### ✅ Step 5: Data Upload and Pipeline Execution
-- Uploaded COLCAP CSV historical data (8 files covering 2024)
-- Created data directory hierarchy in PV (`raw/`, `processed/`, `processing/`, `results/`)
-- Executed economic data consolidation job
-- Ran data ingestion pipeline for Common Crawl download
-- Processing workers automatically distributed workload across 4 pods
-- Correlation service generated final analysis
-
-### ✅ Step 6: Results Validation and Monitoring
-- Generated `correlation.csv` with news-economic correlation analysis
-- Verified data processing across 18+ Colombian news sources
-- Monitored pod health and resource usage with `kubectl`
-- Results available through shared persistent volume
-
----
-
-## 🏆 Technical Achievements
-
-### Architecture & Scalability
-✅ **Cloud-Native Kubernetes Architecture** with declarative resource management  
-✅ **Dynamic horizontal scaling** with 4 parallel processing worker pods  
-✅ **Self-healing capabilities** with automatic pod restarts on failure  
-✅ **Declarative Infrastructure as Code** using YAML manifests  
-✅ **Service discovery** for internal pod communication
-
-### Data Processing
-✅ **Successfully queried Common Crawl Index API** across 10 crawls (2024)  
-✅ **Filtered 18+ Colombian news domains** with economic section targeting  
-✅ **Downloaded and processed WARC segments** using efficient range requests  
-✅ **Consolidated COLCAP economic data** from 8 CSV files  
-✅ **Generated correlation analysis** between news trends and market indicators  
-✅ **Distributed workload** across 4 parallel worker pods automatically
-
-### Kubernetes Features
-✅ **Persistent Volume Claims** for shared data across pods  
-✅ **Pod replica management** for parallel processing (4 worker replicas)  
-✅ **Service endpoints** for internal communication  
-✅ **ConfigMaps** ready for environment configuration  
-✅ **Resource isolation** with container-level compute limits
-
-### DevOps Best Practices
-✅ **GitOps-ready deployment** with version-controlled manifests  
-✅ **Reproducible deployments** with kubectl apply  
-✅ **Rolling updates** capability for zero-downtime deployments  
-✅ **Container orchestration** with automated scheduling  
-✅ **Monitoring and logging** integration with kubectl logs
-
----
-
-## 💰 Cost Analysis
+##  Cost Analysis
 
 ### Monthly Operating Costs:
 | Resource | Cost |
@@ -169,18 +77,18 @@ Deploy a distributed data pipeline system to AWS using Kubernetes for processing
 
 ---
 
-## 📊 Performance Metrics
+## Performance Metrics
 
-✅ **Pipeline Success Rate**: 100%  
-✅ **Pod Orchestration**: All 6 pods scheduled and running successfully  
-✅ **Worker Concurrency**: 4 parallel worker pods operational  
-✅ **Data Integrity**: Shared PVC with atomic file operations prevented race conditions  
-✅ **Error Handling**: Self-healing with automatic pod restarts on failure  
-✅ **Resource Efficiency**: Proper CPU/memory utilization across worker nodes  
-✅ **Service Discovery**: Correlation service accessible via cluster DNS
+ **Pipeline Success Rate**: 100%  
+ **Pod Orchestration**: All 6 pods scheduled and running successfully  
+**Worker Concurrency**: 4 parallel worker pods operational  
+ **Data Integrity**: Shared PVC with atomic file operations prevented race conditions  
+ **Error Handling**: Self-healing with automatic pod restarts on failure  
+ **Resource Efficiency**: Proper CPU/memory utilization across worker nodes  
+ **Service Discovery**: Correlation service accessible via cluster DNS
 
 
-## 📝 Deployment Commands Reference
+##  Deployment Commands Reference
 
 ### EKS Cluster Setup
 ```bash
@@ -286,7 +194,7 @@ kubectl cp <pod-name>:/data/results/correlation.csv ./correlation.csv
 kubectl exec -it <pod-name> -- rm -rf /data/processed/* /data/processing/* /data/results/*
 ```
 
-## ✨ Summary
+## Summary
 
 Successfully deployed a distributed news analysis system to AWS EKS using cloud-native Kubernetes orchestration. The system processes Colombian economic news from Common Crawl and correlates with COLCAP market indicators using a scalable 4-worker pod architecture with enterprise-grade features.
 
@@ -298,19 +206,13 @@ Successfully deployed a distributed news analysis system to AWS EKS using cloud-
 - Complete pipeline execution achieved
 - Results generated successfully
 
-**Deliverables**:
-- ✅ Running AWS EKS cluster with managed control plane
-- ✅ 4 containerized microservices deployed as pods
-- ✅ 6 pods running (1 ingestion + 4 workers + 1 correlation)
-- ✅ Shared PersistentVolume for data exchange
-- ✅ Correlation analysis results
-- ✅ Reproducible kubectl-based deployment
 
-**Status**: **Production-Ready with Enterprise Features** 🎉
+
+**Status**: **Production-Ready with Enterprise Features** 
 
 ---
 
-## 📞 Maintenance & Operations
+##  Maintenance & Operations
 
 ### Scaling Operations
 ```bash
@@ -388,44 +290,7 @@ kubectl rollout undo deployment/data-processing
 kubectl apply -f kubernetes/deployments/processing-deployment.yaml
 ```
 
----
 
-## 🏗️ Kubernetes Architecture
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    AWS EKS Cluster                      │
-│                                                         │
-│  ┌───────────────┐  ┌────────────────────────────────┐ │
-│  │  Control      │  │      Worker Node Group         │ │
-│  │  Plane        │  │  (2-3 x t3.medium instances)   │ │
-│  │  (Managed)    │  └────────────────────────────────┘ │
-│  └───────────────┘                                      │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │  Ingestion Pod                                  │   │
-│  │  [data-ingestion:latest]                        │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │  Processing Deployment (4 replicas)             │   │
-│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐        │   │
-│  │  │ Worker 1 │ │ Worker 2 │ │ Worker 3 │ ...    │   │
-│  │  └──────────┘ └──────────┘ └──────────┘        │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │  Correlation Service Pod                        │   │
-│  │  [correlation-service:latest]                   │   │
-│  │  └─── Service Endpoint (Port 80)                │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │  Persistent Volume (20Gi EBS)                   │   │
-│  │  /data → shared across all pods                 │   │
-│  └─────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────┘
-```
 
 ### Data Flow
 1. **Economic Data**: Pre-loaded COLCAP CSVs in PV → Consolidated by job
