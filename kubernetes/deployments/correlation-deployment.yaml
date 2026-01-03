@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: correlation-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: correlation-service
+  template:
+    metadata:
+      labels:
+        app: correlation-service
+    spec:
+      containers:
+      - name: correlation
+        image: correlation-service:latest
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - mountPath: /data
+          name: data-volume
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: pipeline-data-pvc
